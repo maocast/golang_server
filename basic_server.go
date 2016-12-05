@@ -6,6 +6,7 @@ import (
     "io"
 )
 
+//Structures used for encoding/decoding json
 type Person struct {
     FirstName, LastName string
 }
@@ -24,6 +25,7 @@ func introduce(w http.ResponseWriter, r *http.Request) {
     	p, err := decodeBody(r.Body)
     	//If there was problem decoding the body parameters
     	if err != nil {
+    		//Manually writing error message in json format. Should encode data
 	    	http.Error(w, "{\"Message\": \"" + err.Message + "\"}", http.StatusBadRequest)
 	    	return
     	}
@@ -33,6 +35,7 @@ func introduce(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&g)
 
     } else {
+    	//Manually writing error message in json format. Should encode data
     	http.Error(w, "{\"Message\": \"Method not allowed\"}", http.StatusMethodNotAllowed)
     }
 }
@@ -42,9 +45,11 @@ func decodeBody(r io.Reader) (*Person, *ServerError) {
     decoder := json.NewDecoder(r)
     err := decoder.Decode(&p)
     
+    //Problem decoding data
     if err != nil {
     	return nil, &ServerError{"Could not load json data"}
     }
+    //App specific special cases
     if p.FirstName == "" {
     	return nil, &ServerError{"Person must have a first name"}
     }
