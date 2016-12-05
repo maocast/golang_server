@@ -1,31 +1,58 @@
 package main
 
 import (
-    "fmt"
     "net/http"
     "encoding/json"
+    "io"
 )
-
-func introduce(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintf(w, "Path: %s, MethodType: %s", r.URL.Path, r.Method)
-    if r.Method == "POST" {
-    	decoder := json.NewDecoder(r.Body)
-
-		var p Person
-	    err := decoder.Decode(&p)
-	    if err != nil {
-	    	fmt.Println(err)
-	    }
-
-	   	fmt.Println(p.FirstName)
-	    fmt.Println(p.LastName)
-    } else {
-    	fmt.Fprintf(w, "Please use POST method", r.Method)
-    }
-}
 
 type Person struct {
     FirstName, LastName string
+}
+
+type Greeter struct {
+    Body string
+}
+
+type ServerError struct {
+	Message string
+}
+
+func introduce(w http.ResponseWriter, r *http.Request) {
+    //Only allow for post methods
+    if r.Method == "POST" {
+    	p, err := decodeBody(r.Body)
+    	//If there was problem decoding the body parameters
+    	if err != nil {
+	    	http.Error(w, "{\"Message\": \"" + err.Message + "\"}", http.StatusBadRequest)
+	    	return
+    	}
+
+    	//There are no problems, generate response
+		g := Greeter {"Hi, " + p.FirstName + " " + p.LastName}
+		json.NewEncoder(w).Encode(&g)
+
+    } else {
+    	http.Error(w, "{\"Message\": \"Method not allowed\"}", http.StatusMethodNotAllowed)
+    }
+}
+
+func decodeBody(r io.Reader) (*Person, *ServerError) {
+    var p Person
+    decoder := json.NewDecoder(r)
+    err := decoder.Decode(&p)
+    
+    if err != nil {
+    	return nil, &ServerError{"Could not load json data"}
+    }
+    if p.FirstName == "" {
+    	return nil, &ServerError{"Person must have a first name"}
+    }
+    if p.LastName == "" {
+    	return nil, &ServerError{"Person must have a last name"}
+    }
+
+    return &p, nil
 }
 
 func main() {
