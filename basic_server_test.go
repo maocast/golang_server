@@ -17,8 +17,19 @@ func TestMainGet(t *testing.T) {
 	}
 }
 
-func TestMainPostBadFormat(t *testing.T) {
+func TestMainPostBadFormat1(t *testing.T) {
 	buf := bytes.NewBufferString("{\"titleasdf")
+    resp, err := http.Post("http://localhost:8080/introduce", "text", buf)
+
+    if err != nil {
+    	t.Error("Was not able to comunicate with server")
+    } else if resp.StatusCode != 400 {
+    	t.Error("Server should return 400 error code")
+    }
+}
+
+func TestMainPostBadFormat2(t *testing.T) {
+	buf := bytes.NewBufferString("{\"firstname\":15}")
     resp, err := http.Post("http://localhost:8080/introduce", "text", buf)
 
     if err != nil {
